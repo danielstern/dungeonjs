@@ -1,6 +1,10 @@
 var dungeon = {
     MAX_ATB: 255,
     metaListeners: [],
+    filters:{
+    	notDead:function(){return function(d){return !d.dead}},
+    	differentTeam:function(team){return function(d){return d.team !== team}}
+    },
     meta: {
         event: function(type, options) {
             console.log(type, options);
@@ -16,6 +20,29 @@ var dungeon = {
                 callback: callback
             })
         }
+    },
+    battle:function(actors){
+    	return {
+    		step:function(){
+    			actors.forEach(function(actor){
+					if (actor.dead) return;
+					actor.step();
+					if(actor.atb>=255 && actor.auto){
+						var move = ai[actor.ai].bind(actor)(actors);
+						if (move.target && move.target.dead) {
+							return;
+						};
+
+						if (actors.filter(dungeon.filters.differentTeam(actor.team)).filter(dungeon.filters.notDead)[0]) {
+							actor.action(move.action,move.target)
+						};
+					}
+				})
+    		},
+    		getTargets:function(actor,action){
+    			return actors.filter(differentTeam(actor.team))
+    		}
+    	}
     },
     calculate: {
         physicalDamage: function(target, damage) {

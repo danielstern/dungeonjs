@@ -54,16 +54,17 @@ var ai = {
 		};
 	},
 	'01':function(field,turn){
+		// debugger;
 		var team = this.team;
 		if (Math.random() < 0.3) {
 			return {
 				action:'poison_cloud_1',
-				target:field.filter(function(a){return a.team != team})
+				target:field.filter(dungeon.filters.differentTeam(team))
 			};
 		}
 		return {
 			action:Math.random() > 0.5 ? 'special_attack_1' : 'defend',
-			target:field.filter(function(a){return a.team != team})[0]
+			target:field.filter(dungeon.filters.differentTeam(team))[0]
 		};
 	}
 }

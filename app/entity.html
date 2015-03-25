@@ -9,6 +9,9 @@
     <div>
   	{{entity.mp}}/{{entity.max_mp}}
   </div>
+  <div>
+  	{{entity.atb}}/255
+  </div>
   <div ng-if=entity.status.poison>
   	poison
   </div>
@@ -21,3 +24,7 @@
   <div ng-if=entity.status.berserk>
   	berserk
   </div>
+
+  <button ng-if='entity.atb > 250' ng-click=entity.action(action,getTargets(entity)[0]) ng-repeat='action in entity.actions'>
+  	{{action}}
+  </button>
