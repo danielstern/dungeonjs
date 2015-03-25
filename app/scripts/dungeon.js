@@ -23,15 +23,6 @@ var dungeon = {
 		specialDamage:function(target,damage){
 			return damage - target.resist / 8;
 		},
-		stats:function(entity){
-			var calculated = {};
-			var level = dungeon.calculate.level(entity);
-			dungeon.stats.forEach(function(key){
-				calculated[key] =  entity[key] * level;
-			})
-			calculated.level = level;
-			return calculated;
-		},
 		level:function(entity){
 			return Math.ceil(1 * Math.sqrt(entity.experience/250));
 		},
@@ -40,7 +31,6 @@ var dungeon = {
 			if (ratio > 1) {
 				return true;
 			}
-			console.log('calculate hit...',ratio);
 			return Math.random() > ratio / 2;
 		},
 		elemental:function(target,damage,element){
@@ -101,7 +91,7 @@ var dungeon = {
 			actions:config.actions || ['defend'],
 			action:function(name,target){
 				var action = dungeon.actions[name];
-				var stats = dungeon.calculate.stats(this);
+				var stats = this;
 				if (this.status.petrified) {
 					action = dungeon.actions.petrified;
 				}
@@ -140,6 +130,15 @@ var dungeon = {
 				dungeon.meta.event("recoverHP",{target:this,hp:hp});
 
 			},
+			fullHeal:function(){
+				this.hp = this.max_hp;
+				this.mp = this.max_mp;
+				this.dead = false;
+				for (s in this.status) {
+					this.status[s] = false;
+				}
+			},
+
 			takeStatus:function(status){
 				var immune = this.immune.indexOf(status) > -1;
 				if (!immune) {	
@@ -153,8 +152,6 @@ var dungeon = {
 				if (this.atb < dungeon.MAX_ATB) {
 					this.atb+=dungeon.calculate.atb(this);
 				}
-
-
 
 				if (this.hp <= 0 && !this.dead) {
 					this.dead = true;
@@ -170,7 +167,7 @@ var dungeon = {
 		}
 
 		stats.forEach(function(s){spawn[s] = config[s] || 1});
-		spawn.hp = dungeon.calculate.stats(spawn).max_hp;
+		spawn.fullHeal();
 		return spawn;
 		
 	}

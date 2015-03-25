@@ -1,7 +1,6 @@
 var chars = {
 	'Fireling':{
 		name:'Fireling',
-		experience:3600,
 		max_hp:100,
 		max_mp:10,
 		ap:0,
@@ -11,19 +10,7 @@ var chars = {
 		evasion:2,
 		speed:2,
 		properties:['magical'],
-		ai:function(field,turn){
-			var team = this.team;
-			if (Math.random() < 1) {
-				return {
-					action:'ceilidh',
-					target:field.filter(function(a){return a.team != team})[0]
-				};
-			}
-			return {
-				action:Math.random() > 0.5 ? 'fire_attack_1' : 'defend',
-				target:field.filter(function(a){return a.team != team})[0]
-			};
-		},
+		ai:'00',
 		team:0,
 		damage2x:['water'],
 		damage50:['fire'],
@@ -32,7 +19,6 @@ var chars = {
 	},
 	'Ghoul':{
 		name:'Ghoul',
-		experience:2600,
 		max_hp:90,
 		max_mp:12,
 		ap:0,
@@ -43,19 +29,7 @@ var chars = {
 		evasion:3,
 		speed:3,
 		properties:['magical','undead'],
-		ai:function(field,turn){
-			var team = this.team;
-			if (Math.random() < 0.3) {
-				return {
-					action:'poison_cloud_1',
-					target:field.filter(function(a){return a.team != team})
-				};
-			}
-			return {
-				action:Math.random() > 0.5 ? 'special_attack_1' : 'defend',
-				target:field.filter(function(a){return a.team != team})[0]
-			};
-		},
+		ai:'01',
 		team:0,
 		damage2x:['light'],
 		damage50:[''],
@@ -65,22 +39,50 @@ var chars = {
 	}
 }
 
+var ai = {
+	'00':function(field,turn){
+		var team = this.team;
+		if (Math.random() < 0.2) {
+			return {
+				action:'ceilidh',
+				target:field.filter(function(a){return a.team != team})[0]
+			};
+		}
+		return {
+			action:Math.random() > 0.5 ? 'fire_attack_1' : 'defend',
+			target:field.filter(function(a){return a.team != team})[0]
+		};
+	},
+	'01':function(field,turn){
+		var team = this.team;
+		if (Math.random() < 0.3) {
+			return {
+				action:'poison_cloud_1',
+				target:field.filter(function(a){return a.team != team})
+			};
+		}
+		return {
+			action:Math.random() > 0.5 ? 'special_attack_1' : 'defend',
+			target:field.filter(function(a){return a.team != team})[0]
+		};
+	}
+}
+
 dungeon.action("fire_attack_1",function(target){
-	var stats = dungeon.calculate.stats(this);
-	var targetStats = dungeon.calculate.stats(target);
+
 	var element = 'fire';
 	var accuracy = 0.7;
-	var damage = stats.attack + 5;
+	var damage = this.attack + 5;
 
-	var hit = dungeon.calculate.hit(this,target,accuracy);
+	var hit = dungeon.calculate.hit(this,target);
 	
 	damage = dungeon.calculate.elemental(target,damage,element);
-	damage = dungeon.calculate.physicalDamage(targetStats,damage)
+	damage = dungeon.calculate.physicalDamage(target,damage);
 
 	if (hit) {
 		target.takeDamage(damage);
 		if (Math.random() > 0.2) {
-			target.takeStatus(burn);
+			target.takeStatus('burn');
 		}
 	};
 		
@@ -88,15 +90,11 @@ dungeon.action("fire_attack_1",function(target){
 	dungeon.meta.event("Fire Attack",{attacker:this,target:target,element:element,hit:hit,damage:damage});
 })
 .action("special_attack_1",function(target){
-	var stats = dungeon.calculate.stats(this);
-	var damage = stats.special + 4;
 
-	var hit = Math.random() > 0.8;
+	var damage = this.special + 4,
+	 	hit = dungeon.calculate.hit(this,target);
 
-	
-	damage -= target.resist / 10;
-
-	if (target.defending) damage *= 0.8;
+	damage = dungeon.calculate.specialDamage(target,damage);
 
 	if (hit) {
 		target.takeDamage(damage);	
@@ -134,8 +132,7 @@ dungeon.action("fire_attack_1",function(target){
 		dungeon.meta.event("ceilidh",{attacker:this,target:target,hit:hit});
 	})
 .action("Heal",function(target){
-		var stats = dungeon.calculate.stats(this);
-		var recovery = 40 + stats.special * 3;
+		var recovery = 40 + this.special * 3;
 		var undead = target.properties.undead;
 		if (undead) {
 			target.takeDamage(recovery);
@@ -166,12 +163,10 @@ dungeon.action("fire_attack_1",function(target){
 	if (target instanceof Array) {
 		target = target[0];
 	}
-	var stats = dungeon.calculate.stats(this);
-	var targetStats = dungeon.calculate.stats(target);
-	var damage = stats.attack + 8;
+	var damage = this.attack + 8;
 	var hit = dungeon.calculate.hit(this,target);
 	
-	damage = dungeon.calculate.physicalDamage(targetStats,damage)
+	damage = dungeon.calculate.physicalDamage(target,damage)
 
 	if (hit) {
 		target.takeDamage(damage);
