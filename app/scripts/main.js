@@ -2,7 +2,8 @@ angular.module('demo',[])
 .run(function($rootScope,$interval){
 	$rootScope.spawn = function(){
 		$rootScope.dude1 = dungeon.entity(chars.Fireling);
-		$rootScope.dude2 = dungeon.entity(chars.Fireling);
+		$rootScope.dude2 = dungeon.entity(chars.Ghoul);
+		$rootScope.dude3 = dungeon.entity(chars.Ghoul);
 
 	}
 
@@ -13,11 +14,13 @@ angular.module('demo',[])
 	
 		var dude1 = 	$rootScope.dude1;
 		var dude2 = 	$rootScope.dude2;
+		var dude3 = 	$rootScope.dude3;
 		dude2.team = 1;
 		if (dude1.dead || dude2.dead) return;
 
 		$rootScope.dude1.step();
 		$rootScope.dude2.step();
+		$rootScope.dude3.step();
 
 
 		if($rootScope.dude1.atb===255){
