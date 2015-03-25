@@ -1,13 +1,8 @@
 var dungeon = {
-	elements:{
-		fire:{
-			multipliers:{
-				ice:1.5,
-				water:0.5
-			}
-		}
-	},
-	stats:'max_hp.max_mp.attack.defense.special.resist.speed.evade.accuracy.max_ap'.split('.'),
+	stats:'max_hp.max_mp.attack.defense.special.resist.speed.evasion.accuracy'.split('.'),
+	status:'poison.float.berserk.fear.stone.curse.confused'.split('.'),
+	properties:'undead.flying.magical.human.ghost.beast'.split('.'),
+	MAX_ATB:255,
 	calculate:{
 		damage:function(attack,defender){
 			var d = dungeon.calculate.stats(defender);
@@ -16,22 +11,15 @@ var dungeon = {
 		stats:function(entity){
 			var calculated = {};
 			var level = dungeon.calculate.level(entity);
-			for (key in entity.stats){
-				calculated[key] =  entity.stats[key] * level;
-			}
+			dungeon.stats.forEach(function(key){
+				calculated[key] =  entity[key] * level;
+			})
 			return calculated;
 		},
 		level:function(entity){
 			return Math.ceil(1 * Math.sqrt(entity.experience/1000));
-		}
-	},
-	actions:{
-		fire_attack_1:function(target){
-			var stats = dungeon.calculate.stats(this);
-			var element = 'fire';
-
-			var damage = stats.attack + 5;
-			
+		},
+		elemental:function(target,damage,element){
 			if (target.damage2x.indexOf(element) > -1) {
 				damage *=2;
 			}
@@ -44,19 +32,11 @@ var dungeon = {
 				damage *= 0;
 			}
 
-			damage -= target.stats.defense / 10;
-
-			if (Math.random() > 0.2) {
-				target.status.burn = true;
-			}
-
-			target.hp -= damage;
-			console.log("Fire attack:",this.name, '=>', target.name,damage);
-		},
-		defend:function(){
+			return damage;
 
 		}
 	},
+	actions:dungeon_actions,
 	/*
 		Add a new action that entities can do.
 	*/
@@ -68,36 +48,53 @@ var dungeon = {
 		Creates a blueprint that returns new instances of a creature.
 	*/
 	entity:function(config){
-		config = config || {stats:{}};
+		config = config || {};
 
 		var stats = dungeon.stats;
+		var stepListeners = [];
 		var spawn = {
-			stats:{
-				
-			},
-			status:{
-				burn:false,
-			},
+			status:{},
 			experience:config.experience||1,
-			hp:10,
-			name:config.name = 'Fireling',
-			mp:1,
+			hp:config.max_hp||1,
+			name:config.name||'unknown',
+			mp:config.max_mp||1,
 			ap:0,
-			damage2x:['water'],
-			damage50:['fire'],
-			damage0:['dark'],
-			actions:config.actions || ['fire_attack_1','defend'],
+			atb:0,
+			dead:config.dead||false,
+			team:config.team||0,
+			damage2x:config.damage2x||[],
+			damage50:config.damage50||[],
+			damage0:config.damage0||[],
+			actions:config.actions || ['defend'],
 			action:function(name,options){
 				var action = dungeon.actions[name];
 				action.bind(this)(options);
+				this.atb = 0;
 			},
-			takeDamage:function(attack){
-				var damage = dungeon.calculate.damage(attack,this);
+			takeDamage:function(damage){
 				this.hp-=damage;
+			},
+			step:function(){
+				if (this.atb < dungeon.MAX_ATB) {
+					this.atb++;
+				}
+
+				if (this.atb % 100 === 0 && this.status.burn) {
+
+				};
+
+				if (this.hp <= 0) {
+					this.dead = true;
+				}
+
+				stepListeners.forEach(function(a){a(spawn)})
+			},
+			onstep:function(l){
+				stepListeners.push(l);
 			}
 		}
 
-		stats.forEach(function(s){spawn.stats[s] = config.stats[s] || 1});
+		stats.forEach(function(s){spawn[s] = config[s] || 1});
 		return spawn;
 		
 	}

@@ -1,5 +1,5 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" ng-app=demo>
   <head>
     <meta charset="utf-8">
     <title>dungeon</title>
@@ -21,20 +21,21 @@
     <![endif]-->
 
 
-    <div class="hero-unit">
-      <h1>'Allo, 'Allo!</h1>
-      <p>You now have</p>
-      <ul>
-      <li>dungeon.js</li>
-
-
-      </ul>
+    <div>
+      dude1:{{dude1}}
     </div>
+
+    <div>
+      dude2:{{dude2}}
+    </div>
+
+    <button ng-click=spawn()>spawn 2 new dudes</button>
 
 
     <!-- build:js(.) scripts/vendor.js -->
     <!-- bower:js -->
     <script src="bower_components/jquery/dist/jquery.js"></script>
+    <script src="bower_components/angular/angular.js"></script>
     <!-- endbower -->
     <!-- endbuild -->
 
@@ -42,6 +43,7 @@
 
         <!-- build:js({app,.tmp}) scripts/main.js -->
         <script src="scripts/main.js"></script>
+        <script src="scripts/characters.js"></script>
         <script src="scripts/dungeon.js"></script>
         <!-- endbuild -->
 </body>
