@@ -7,7 +7,7 @@ var dungeon = {
 			}
 		}
 	},
-	stats:'hp.mp.attack.defense.special.resist.speed.evade.accuracy'.split('.'),
+	stats:'max_hp.max_mp.attack.defense.special.resist.speed.evade.accuracy.max_ap'.split('.'),
 	calculate:{
 		damage:function(attack,defender){
 			var d = dungeon.calculate.stats(defender);
@@ -17,19 +17,19 @@ var dungeon = {
 			var calculated = {};
 			var level = dungeon.calculate.level(entity)
 			for (key in entity.stats){
-				calculated[key] =  entity.stats[key] * Math.pow(level,1.2);
+				calculated[key] =  entity.stats[key] * entity.formulas[key] || Math.pow(level,1.2);
 			}
-			console.log('calculated?',calculated,entity)
+
+			delete calculated.calculate;
 
 			return calculated;
 		},
 		level:function(entity){
-			return Math.ceil(entity.experience/1000);
+			return Math.ceil(1 * Math.sqrt(entity.experience/1000));
 		}
 	},
 	actions:{
 		attack:function(options){
-			var target = options.target;
 			var stats = dungeon.calculate.stats(this);
 			options.target.takeDamage({
 				damage:stats.attack,
@@ -57,14 +57,21 @@ var dungeon = {
 			actions = config.actions || ['attack','defend'];
 
 		var entity = function(ghost){
-			ghost = ghost || {
-				stats:{}
-			};
+			ghost = ghost || {};
+			ghost.stats = ghost.stats || {};
 			var spawn = {
-				stats:{},
-				experience:1,
+				stats:{
+					calculate:function(){
+						return dungeon.calculate.stats(spawn);
+					}
+				},
+				formulas: {
+
+				},
+				experience:ghost.experience||1,
 				hp:10,
 				mp:1,
+				ap:0,
 				actions:ghost.actions|| actions,
 				action:function(name,options){
 					var action = dungeon.actions[name];
