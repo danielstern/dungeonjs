@@ -59,7 +59,6 @@ var dungeon = {
 			hp:config.max_hp||1,
 			name:config.name||'unknown',
 			mp:config.max_mp||1,
-			ap:0,
 			atb:0,
 			dead:config.dead||false,
 			team:config.team||0,
@@ -77,12 +76,22 @@ var dungeon = {
 				this.hp-=damage;
 			},
 			step:function(){
+				var stats = dungeon.calculate.stats(this);
 				if (this.atb < dungeon.MAX_ATB) {
-					this.atb++;
+					var increase = this.speed;
+					if (this.haste) increase *= 2;
+					if (this.slow) increase /= 2;
+					this.atb+=increase;
 				}
 
 				if (this.atb % 100 === 0 && this.status.burn) {
+					this.hp-=stats.max_hp*=0.05;
+					console.log("burn damage");
+				};
 
+				if (this.atb % 75 === 0 && this.status.poison) {
+					this.hp-=stats.max_hp*=0.05;
+					console.log("poison damage");
 				};
 
 				if (this.hp <= 0) {

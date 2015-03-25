@@ -2,7 +2,7 @@ var chars = {
 	'Fireling':{
 		name:'Fireling',
 		experience:3600,
-		max_hp:4,
+		max_hp:12,
 		max_mp:2,
 		ap:0,
 		atb:0,
