@@ -17,6 +17,7 @@ var dungeon = {
 	},
 	calculate:{
 		physicalDamage:function(target,damage){
+			if (target.defending) damage *= 0.7;
 			return damage - target.defense / 10;
 		},
 		specialDamage:function(target,damage){
@@ -35,8 +36,12 @@ var dungeon = {
 			return Math.ceil(1 * Math.sqrt(entity.experience/250));
 		},
 		hit:function(attacker,defender,accuracy){
-			var diff = 1 / attacker.accuracy - defender.evade / 2;
-			return Math.random() > diff;
+			var ratio = attacker.accuracy / defender.evasion;
+			if (ratio > 1) {
+				return true;
+			}
+			console.log('calculate hit...',ratio);
+			return Math.random() > ratio / 2;
 		},
 		elemental:function(target,damage,element){
 			if (target.damage2x.indexOf(element) > -1) {
@@ -53,6 +58,12 @@ var dungeon = {
 
 			return damage;
 
+		},
+		atb:function(char){
+			var increase = char.speed;
+			if (char.haste) increase *= 2;
+			if (char.slow) increase /= 2;
+			return increase;
 		}
 	},
 	actions:[],
@@ -88,17 +99,46 @@ var dungeon = {
 			damage0:config.damage0||[],
 			properties:config.properties||[],
 			actions:config.actions || ['defend'],
-			action:function(name,options){
+			action:function(name,target){
 				var action = dungeon.actions[name];
+				var stats = dungeon.calculate.stats(this);
 				if (this.status.petrified) {
 					action = dungeon.actions.petrified;
 				}
-				action.bind(this)(options);
+
+				if (this.status.berserk) {
+					action = dungeon.actions.berserk_attack;
+					
+				}
+				dungeon.meta.event("action",{actor:this,name:name,target:target});
+				action.bind(this)(target);
 				this.atb = 0;
+
+				if (this.status.burn) {
+					var damage = stats.max_hp*=0.05;
+					this.hp-=damage;
+					dungeon.meta.event("fireDamage",{target:this,damage:damage});
+				};
+
+				if (this.status.poison) {
+					var damage = stats.max_hp*=0.05;
+					this.hp-=damage;
+					dungeon.meta.event("poisonDamage",{target:this,damage:damage});
+				};
+
 			},
 			takeDamage:function(damage){
 				this.hp-=damage;
 				dungeon.meta.event("takeDamage",{target:this,damage:damage});
+			},
+			getCalculatedStats:function(){
+				return dungeon.calculate.stats(this);
+			},
+			recoverHP:function(hp){
+				this.hp+=hp;
+				if (this.hp > this.max_hp) this.hp = this.max_hp;
+				dungeon.meta.event("recoverHP",{target:this,hp:hp});
+
 			},
 			takeStatus:function(status){
 				var immune = this.immune.indexOf(status) > -1;
@@ -109,23 +149,12 @@ var dungeon = {
 				dungeon.meta.event("statusInflicted",{target:this,immune:immune});
 			},
 			step:function(){
-				var stats = dungeon.calculate.stats(this);
+				
 				if (this.atb < dungeon.MAX_ATB) {
-					var increase = this.speed;
-					if (this.haste) increase *= 2;
-					if (this.slow) increase /= 2;
-					this.atb+=increase;
+					this.atb+=dungeon.calculate.atb(this);
 				}
 
-				if (this.atb % 100 === 0 && this.status.burn) {
-					this.hp-=stats.max_hp*=0.05;
-					console.log("burn damage");
-				};
 
-				if (this.atb % 75 === 0 && this.status.poison) {
-					this.hp-=stats.max_hp*=0.05;
-					console.log("poison damage");
-				};
 
 				if (this.hp <= 0 && !this.dead) {
 					this.dead = true;

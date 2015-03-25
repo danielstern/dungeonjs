@@ -23,12 +23,12 @@ angular.module('demo',[])
 		$rootScope.dude3.step();
 
 
-		if($rootScope.dude1.atb===255){
+		if($rootScope.dude1.atb>=255){
 			var move = dude1.ai([dude1,dude2]);
 			dude1.action(move.action,move.target)
 		}
 
-		if($rootScope.dude2.atb===255){
+		if($rootScope.dude2.atb>=255){
 			var move = dude2.ai([dude1,dude2]);
 			dude2.action(move.action,move.target)
 		}
