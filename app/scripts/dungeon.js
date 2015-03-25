@@ -21,6 +21,14 @@ var dungeon = {
             })
         }
     },
+    targeting:{
+    	'00':function(entity, field){
+    		return field.filter(function(e){return e.team !== entity.team && !e.dead});
+    	},
+    	'01':function(entity, field){
+    		return field.filter(function(e){return e.team === entity.team});
+    	},
+    },
     battle:function(actors){
     	return {
     		step:function(){
@@ -40,7 +48,7 @@ var dungeon = {
 				})
     		},
     		getTargets:function(actor,action){
-    			return actors.filter(differentTeam(actor.team))
+    			return actors.filter(dungeon.filters.differentTeam(actor.team))
     		}
     	}
     },

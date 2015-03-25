@@ -1,0 +1,7 @@
+petrified	null
+berserk_attack	auto_enemy
+defend	null
+heal	ally
+poison_cloud every_enemy
+fire_attack_1 enemy
+special_attack_1 enemy
