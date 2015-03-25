@@ -5,32 +5,41 @@ angular.module('demo',[])
 		$rootScope.dude2 = dungeon.entity(chars.Ghoul);
 		$rootScope.dude3 = dungeon.entity(chars.Ghoul);
 
+		var dude1 = 	$rootScope.dude1;
+		var dude2 = 	$rootScope.dude2;
+		var dude3 = 	$rootScope.dude3;
+		dude3.team = 1;
+
+		$rootScope.dudes = [dude1,dude2,dude3]
+
 	}
 
 	$rootScope.spawn();
 
 	$interval(function(){
 
-	
-		var dude1 = 	$rootScope.dude1;
-		var dude2 = 	$rootScope.dude2;
-		var dude3 = 	$rootScope.dude3;
-		dude2.team = 1;
-		if (dude1.dead || dude2.dead) return;
+		$rootScope. dudes.forEach(function(dude){
+			if (dude.dead) return;
+			dude.step();
+			if(dude.atb>=255){
+				var move = ai[dude.ai]($rootScope. dudes.filter(function(d){return !d.dead}));
+				dude.action(move.action,move.target)
+			}
+		})
 
-		$rootScope.dude1.step();
-		$rootScope.dude2.step();
-		$rootScope.dude3.step();
-
-
-		if($rootScope.dude1.atb>=255){
-			var move = ai[dude1.ai]([dude1,dude2]);
-			dude1.action(move.action,move.target)
-		}
-
-		if($rootScope.dude2.atb>=255){
-			var move = ai[dude2.ai]([dude1,dude2]);
-			dude2.action(move.action,move.target)
-		}
 	},10)
+})
+.directive('dungeonEntityDisplay',function(){
+	return {
+		restrict:"AE",
+		templateUrl:"entity.html"
+	}
+
+})
+.filter('team',function(){
+
+	return function(d,a){
+		// debugger;
+		return d.filter(function(e){return e.team===a})
+	}
 })

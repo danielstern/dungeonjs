@@ -57,7 +57,7 @@ var dungeon = {
             return increase;
         }
     },
-    actions: [],
+    actions: {},
     /*
 		Add a new action that entities can do.
 	*/
@@ -172,6 +172,8 @@ var dungeon = {
                     });
                 }
 
+           
+
                 this.stepListeners.forEach(function(a) {
                     a(entity)
                 })
@@ -185,35 +187,7 @@ var dungeon = {
         }
 
     },
-    statuses: {
-        "poison": {
-            beforeAction: function(stats) {
-                var damage = stats.max_hp * 0.05;
-                stats.hp -= damage;
-                dungeon.meta.event("fireDamage", {
-                    target: this,
-                    damage: damage
-                });
-            }
-
-        },
-        "burn": {
-            beforeAction: function(stats) {
-                var damage = stats.max_hp * 0.1;
-                if (Math.random() > 0.5) stats.hp -= damage;
-                dungeon.meta.event("poisonDamage", {
-                    target: this,
-                    damage: damage
-                });
-            }
-        },
-        stone: {
-            replaceAction: 'petrified'
-        },
-        berserk: {
-            replaceAction: 'berserk_attack'
-        },
-    },
+    statuses: {},
     status: function(name, status) {
         this.statuses[name] = status;
         return this;
@@ -224,7 +198,7 @@ var dungeon = {
 	*/
     entity: function(config) {
         var spawn = dungeon.proto();
-        
+
         for (stat in config) {
             spawn[stat] = config[stat];
         }

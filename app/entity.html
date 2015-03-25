@@ -1,0 +1,23 @@
+  <!-- {{entity}} -->
+
+  <div>
+  	{{entity.name}}
+  </div>
+  <div>
+  	{{entity.hp}}/{{entity.max_hp}}
+  </div>
+    <div>
+  	{{entity.mp}}/{{entity.max_mp}}
+  </div>
+  <div ng-if=entity.status.poison>
+  	poison
+  </div>
+  <div ng-if=entity.status.burn>
+  	burn
+  </div>
+  <div ng-if=entity.status.fear>
+  	fear
+  </div>
+  <div ng-if=entity.status.berserk>
+  	berserk
+  </div>

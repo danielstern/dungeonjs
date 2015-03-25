@@ -15,7 +15,7 @@ var chars = {
 		damage2x:['water'],
 		damage50:['fire'],
 		damage0:[],
-		actions: ['fire_attack_1','defend'],
+		actions: ['fire_attack_1','defend','ceilidh'],
 	},
 	'Ghoul':{
 		name:'Ghoul',
@@ -174,3 +174,30 @@ dungeon.action("fire_attack_1",function(target){
 
 	dungeon.meta.event("Berserk Attack",{attacker:this,target:target,hit:hit,damage:damage});
 })
+.status( "poison", {
+            beforeAction: function(stats) {
+                var damage = stats.max_hp * 0.05;
+                stats.hp -= damage;
+                dungeon.meta.event("fireDamage", {
+                    target: this,
+                    damage: damage
+                });
+            }
+
+        })
+.status("burn", {
+            beforeAction: function(stats) {
+                var damage = stats.max_hp * 0.1;
+                if (Math.random() > 0.5) stats.hp -= damage;
+                dungeon.meta.event("poisonDamage", {
+                    target: this,
+                    damage: damage
+                });
+            }
+        })
+.status('stone', {
+    replaceAction: 'petrified'
+})
+.status("berserk", {
+    replaceAction: 'berserk_attack'
+});
