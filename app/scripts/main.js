@@ -13,6 +13,7 @@ angular.module('demo',[])
 	
 		var dude1 = 	$rootScope.dude1;
 		var dude2 = 	$rootScope.dude2;
+		dude2.team = 1;
 		if (dude1.dead || dude2.dead) return;
 
 		$rootScope.dude1.step();
@@ -20,11 +21,13 @@ angular.module('demo',[])
 
 
 		if($rootScope.dude1.atb===255){
-			dude1.action(dude1.ai([dude1,dude2]),dude2)
+			var move = dude1.ai([dude1,dude2]);
+			dude1.action(move.action,move.target)
 		}
 
 		if($rootScope.dude2.atb===255){
-			dude2.action(dude2.ai([dude1,dude2]),dude1)
+			var move = dude2.ai([dude1,dude2]);
+			dude2.action(move.action,move.target)
 		}
 	},1)
 })

@@ -63,7 +63,7 @@ var dungeon = {
 			atb:0,
 			dead:config.dead||false,
 			team:config.team||0,
-			ai:config.ai||function(){return 'defend'},
+			ai:config.ai||function(){return {action:'defend'}},
 			damage2x:config.damage2x||[],
 			damage50:config.damage50||[],
 			damage0:config.damage0||[],

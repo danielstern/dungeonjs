@@ -10,7 +10,11 @@ var chars = {
 		defense:2,
 		evasion:2,
 		ai:function(field,turn){
-			return Math.random() > 0.5 ? 'fire_attack_1' : 'defend';
+			var team = this.team;
+			return {
+				action:Math.random() > 0.5 ? 'fire_attack_1' : 'defend',
+				target:field.filter(function(a){return a.team != team})[0]
+			};
 		},
 		team:0,
 		damage2x:['water'],
