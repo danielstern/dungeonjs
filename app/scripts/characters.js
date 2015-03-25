@@ -1,7 +1,7 @@
 var chars = {
 	'Fireling':{
 		name:'Fireling',
-		experience:2500,
+		experience:3600,
 		max_hp:4,
 		max_mp:2,
 		ap:0,
@@ -9,6 +9,9 @@ var chars = {
 		attack:3,
 		defense:2,
 		evasion:2,
+		ai:function(field,turn){
+			return Math.random() > 0.5 ? 'fire_attack_1' : 'defend';
+		},
 		team:0,
 		damage2x:['water'],
 		damage50:['fire'],
@@ -56,5 +59,7 @@ var dungeon_actions = {
 				this.defending = false;
 			}
 		})
+
+		console.log("Defend:",this.name);
 	}
 }

@@ -14,10 +14,11 @@ var dungeon = {
 			dungeon.stats.forEach(function(key){
 				calculated[key] =  entity[key] * level;
 			})
+			calculated.level = level;
 			return calculated;
 		},
 		level:function(entity){
-			return Math.ceil(1 * Math.sqrt(entity.experience/1000));
+			return Math.ceil(1 * Math.sqrt(entity.experience/250));
 		},
 		elemental:function(target,damage,element){
 			if (target.damage2x.indexOf(element) > -1) {
@@ -62,6 +63,7 @@ var dungeon = {
 			atb:0,
 			dead:config.dead||false,
 			team:config.team||0,
+			ai:config.ai||function(){return 'defend'},
 			damage2x:config.damage2x||[],
 			damage50:config.damage50||[],
 			damage0:config.damage0||[],
@@ -95,6 +97,7 @@ var dungeon = {
 		}
 
 		stats.forEach(function(s){spawn[s] = config[s] || 1});
+		spawn.hp = dungeon.calculate.stats(spawn).max_hp;
 		return spawn;
 		
 	}
