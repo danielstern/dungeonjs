@@ -32,5 +32,5 @@ angular.module('demo',[])
 			var move = ai[dude2.ai]([dude1,dude2]);
 			dude2.action(move.action,move.target)
 		}
-	},1)
+	},10)
 })

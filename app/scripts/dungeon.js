@@ -47,7 +47,6 @@ var dungeon = {
 			}
 
 			return damage;
-
 		},
 		atb:function(char){
 			var increase = char.speed;
@@ -62,6 +61,33 @@ var dungeon = {
 	*/
 	action:function(name,action){
 		this.actions[name] = action;
+		return this;
+	},
+	statuses:{
+		"poison":{
+			beforeAction:function(stats){
+				var damage = stats.max_hp*0.05;
+				stats.hp-=damage;
+				dungeon.meta.event("fireDamage",{target:this,damage:damage});
+			}
+
+		},
+		"burn":{
+			beforeAction:function(stats){
+				var damage = stats.max_hp*0.1;
+				if (Math.random() > 0.5) stats.hp-=damage;
+				dungeon.meta.event("poisonDamage",{target:this,damage:damage});
+			}
+		},
+		stone:{
+			replaceAction:'petrified'
+		},
+		berserk:{
+			replaceAction:'berserk_attack'
+		},
+	},
+	status:function(name,status){
+		this.statuses[name] = status;
 		return this;
 	},
 
@@ -92,29 +118,18 @@ var dungeon = {
 			action:function(name,target){
 				var action = dungeon.actions[name];
 				var stats = this;
-				if (this.status.petrified) {
-					action = dungeon.actions.petrified;
+				
+				for (var k in this.status) {
+					if (this.status[k]) {
+						var status = dungeon.statuses[k];
+						if (status.replaceAction) action = dungeon.actions[status.replaceAction];
+						if (status.beforeAction) status.beforeAction(this);
+					}
 				}
 
-				if (this.status.berserk) {
-					action = dungeon.actions.berserk_attack;
-					
-				}
 				dungeon.meta.event("action",{actor:this,name:name,target:target});
 				action.bind(this)(target);
 				this.atb = 0;
-
-				if (this.status.burn) {
-					var damage = stats.max_hp*=0.05;
-					this.hp-=damage;
-					dungeon.meta.event("fireDamage",{target:this,damage:damage});
-				};
-
-				if (this.status.poison) {
-					var damage = stats.max_hp*=0.05;
-					this.hp-=damage;
-					dungeon.meta.event("poisonDamage",{target:this,damage:damage});
-				};
 
 			},
 			takeDamage:function(damage){
