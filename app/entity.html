@@ -28,3 +28,6 @@
   <button ng-if='entity.atb > 250' ng-click=battle.action(entity,action) ng-repeat='action in entity.actions'>
   	{{action}}
   </button>
+  <button ng-click=inventory.use('potion',[entity])>
+    potion 
+  </button>

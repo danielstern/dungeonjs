@@ -22,6 +22,69 @@ var dungeon = {
             })
         }
     },
+    inventory:function(){
+        var inventory = {
+            add:function(item){
+                this.contents.push(item);
+            },
+            contents:[],
+            use:function(item,targets){
+                console.log("using item",item,this.contents);
+                var index = this.contents.indexOf(item);
+                var item = this.contents[index];
+                if (!item){
+                    dungeon.meta.event("item_not_in_inventory");
+                    return;
+                };
+                var instance = dungeon.items[item]();
+                if (!instance.use){
+                  dungeon.meta.event("cant_use_item");  
+                  return;
+                }
+
+                instance.use(targets);
+                this.contents.splice(index,1);
+                
+            },
+            equip:function(item,target){
+
+                var index = this.contents.indexOf(item);
+                var item = this.contents[index];
+                if (!item){
+                    dungeon.meta.event("item_not_in_inventory");
+                    return;
+                };
+                var instance = dungeon.items[item]();
+
+                if (!instance.equip){
+                  dungeon.meta.event("cant_use_equip");  
+                  return;
+                }
+                var prev = target.equipment[instance.equip];
+                if (prev){
+                    this.contents.push(prev);
+                }
+
+                target.equipment[instance.equip] = item;
+            }
+        };
+        return inventory;
+    },
+    items:{
+        proto:{
+            canEquip:false,
+            canUse:false,
+            onUse:function(targets){
+
+            },
+        }
+    },
+   item: function(name, item) {
+        this.items[name] = function(){
+            return item;   
+        }
+        return this;
+    },
     battle:function(actors){
     	return {
     		step:function(){
@@ -59,71 +122,8 @@ var dungeon = {
         this.targetings[name] = targeting;
         return this;
     },
-    characters:{},
-    character: function(name, schema) {
-        this.characters[name] = function(overrides){
-           var model = {};
-           for(g in schema) {
-                if (!model[g]) model[g] = schema[g];
-           }
-           return model; 
-        } 
-        return this;
-    },
-    ais:{},
-    ai: function(name, ai) {
-        this.ais[name] = ai;
-        return this;
-    },
-    calculate: {
-        physicalDamage: function(target, damage) {
-            if (target.defending) damage *= 0.7;
-            return damage - target.defense / 10;
-        },
-        specialDamage: function(target, damage) {
-            return damage - target.resist / 8;
-        },
-        level: function(entity) {
-            return Math.ceil(1 * Math.sqrt(entity.experience / 250));
-        },
-        hit: function(attacker, defender, accuracy) {
-            var ratio = attacker.accuracy / defender.evasion;
-            if (ratio > 1) {
-                return true;
-            }
-            return Math.random() > ratio / 2;
-        },
-        elemental: function(target, damage, element) {
-            if (target.damage2x.indexOf(element) > -1) {
-                damage *= 2;
-            }
-
-            if (target.damage50.indexOf(element) > -1) {
-                damage /= 2;
-            }
-
-            if (target.damage0.indexOf(element) > -1) {
-                damage *= 0;
-            }
-
-            return damage;
-        },
-        atb: function(char) {
-            var increase = char.speed;
-            if (char.haste) increase *= 2;
-            if (char.slow) increase /= 2;
-            return increase;
-        }
-    },
-    actions: {},
-    /*
-		Add a new action that entities can do.
-	*/
-    action: function(name, action) {
-        this.actions[name] = action;
-        return this;
-    },
-    proto: function() {
+    characters:{
+        proto: function() {
 
         return {
             status: {},
@@ -148,6 +148,7 @@ var dungeon = {
                     action: 'defend'
                 }
             },
+            equipment:{},
             damage2x: [],
             damage50: [],
             immune: [],
@@ -164,6 +165,14 @@ var dungeon = {
                         var status = dungeon.statuses[k];
                         if (status.replaceAction) action = dungeon.actions[status.replaceAction];
                         if (status.beforeAction) status.beforeAction(this);
+                    }
+                }
+
+                for (var q in this.equipment) {
+                    if (this.equipment[q]) {
+                        var equipment = dungeon.items[this.equipment[q]]();
+                        if (equipment.replaceActionOn && equipment.replaceActionOn.indexOf(name)>-1) action = dungeon.actions[equipment.replaceAction];
+                        if (equipment.beforeAction) equipment.beforeAction(this);
                     }
                 }
 
@@ -247,6 +256,70 @@ var dungeon = {
             }
         }
 
+    }
+    },
+    character: function(name, schema) {
+        this.characters[name] = function(overrides){
+           var model = {};
+           for(g in schema) {
+                if (!model[g]) model[g] = schema[g];
+           }
+           return model; 
+        } 
+        return this;
+    },
+    ais:{},
+    ai: function(name, ai) {
+        this.ais[name] = ai;
+        return this;
+    },
+    calculate: {
+        physicalDamage: function(target, damage) {
+            if (target.defending) damage *= 0.7;
+            return damage - target.defense / 10;
+        },
+        specialDamage: function(target, damage) {
+            return damage - target.resist / 8;
+        },
+        level: function(entity) {
+            return Math.ceil(1 * Math.sqrt(entity.experience / 250));
+        },
+        hit: function(attacker, defender, accuracy) {
+            var ratio = attacker.accuracy / defender.evasion;
+            if (ratio > 1) {
+                return true;
+            }
+            return Math.random() > ratio / 2;
+        },
+        elemental: function(target, damage, element) {
+            if (target.damage2x.indexOf(element) > -1) {
+                damage *= 2;
+            }
+
+            if (target.damage50.indexOf(element) > -1) {
+                damage /= 2;
+            }
+
+            if (target.damage0.indexOf(element) > -1) {
+                damage *= 0;
+            }
+
+            return damage;
+        },
+        atb: function(char) {
+            var increase = char.speed;
+            if (char.haste) increase *= 2;
+            if (char.slow) increase /= 2;
+            return increase;
+        }
+    },
+    actions: {},
+    /*
+		Add a new action that entities can do.
+	*/
+    action: function(name, action) {
+        this.actions[name] = action;
+        return this;
     },
     statuses: {},
     status: function(name, status) {
@@ -258,7 +331,7 @@ var dungeon = {
 		Creates a blueprint that returns new instances of a creature.
 	*/
     entity: function(config) {
-        var spawn = dungeon.proto();
+        var spawn = dungeon.characters.proto();
 
         for (stat in config) {
             spawn[stat] = config[stat];

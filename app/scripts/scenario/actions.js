@@ -101,9 +101,7 @@ dungeon.action("fire_attack_1",function(target){
 })
 
 .action("berserk_attack",function(target){
-	if (target instanceof Array) {
-		target = target[0];
-	}
+
 	var damage = this.attack + 8;
 	var hit = dungeon.calculate.hit(this,target);
 	
@@ -115,6 +113,24 @@ dungeon.action("fire_attack_1",function(target){
 
 	dungeon.meta.event("Berserk Attack",{attacker:this,target:target,hit:hit,damage:damage});
 })
+
 .targeting("berserk_attack",function(actor){
+	return dungeon.filters.differentTeam(actor.team)
+})
+
+.action("dirk_attack",function(target){
+
+	var damage = this.attack + 12;
+	var hit = dungeon.calculate.hit(this,target);
+	
+	damage = dungeon.calculate.physicalDamage(target,damage)
+
+	if (hit) {
+		target.takeDamage(damage);
+	};
+
+	dungeon.meta.event("Dirk Attack",{attacker:this,target:target,hit:hit,damage:damage});
+})
+.targeting("dirk_attack",function(actor){
 	return dungeon.filters.differentTeam(actor.team)
 })
