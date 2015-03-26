@@ -2,7 +2,7 @@ angular.module('demo',[])
 .run(function($rootScope,$interval){
 	$rootScope.spawn = function(){
 		var dude1 = dungeon.entity(chars.Fireling),
-			dude2 = dungeon.entity(chars.Fireling);
+			dude2 = dungeon.entity(chars.Ghoul);
 
 			dude2.team = 1;
 			dude2.auto = true;
