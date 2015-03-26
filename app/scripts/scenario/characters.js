@@ -31,7 +31,7 @@ dungeon.character('Fireling',{
 		ai:'01',
 		team:0,
 		damage2x:['light'],
-		damage50:[''],
+		damage50:[],
 		damage0:['dark'],
 		immune:['petrify'],
 		actions: ['defend'],
