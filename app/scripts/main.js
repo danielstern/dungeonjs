@@ -38,3 +38,7 @@ angular.module('demo',[])
 		return d.filter(function(e){return e.team===a})
 	}
 })
+
+dungeon.filters.add("notDead",function(){return function(d){return !d.dead}})
+dungeon.filters.add("differentTeam",function(team){return function(d){return d.team !== team}})
+dungeon.filters.add("sameTeam",function(team){return function(d){return d.team === team}})
