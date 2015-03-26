@@ -7,44 +7,22 @@ var dungeon = {
     	sameTeam:function(team){return function(d){return d.team === team}}
     },
     meta: {
-        event: function(type, options) {
-            console.log(type, options);
-            dungeon.metaListeners.filter(function(a) {
-                return a.type === type
-            }).forEach(function(a) {
-                a(options);
-            })
-        },
-        listen: function(type, callback) {
-            dungeon.metaListeners.push({
-                type: type,
-                callback: callback
-            })
-        }
+        event: function(type, options) {console.log(type);_.where(dungeon.metaListeners,{type:type}).forEach(function(a){a(options);})},
+        listen: function(type, callback) {dungeon.metaListeners.push({type: type,callback: callback})}
     },
     inventory:function(){
         var inventory = {
-            add:function(item){
-                this.contents.push(item);
-            },
             contents:[],
+            add:function(item){this.contents.push(item)},
             use:function(item,targets){
-                console.log("using item",item,this.contents);
-                var index = this.contents.indexOf(item);
-                var item = this.contents[index];
-                if (!item){
-                    dungeon.meta.event("item_not_in_inventory");
-                    return;
-                };
+
+                if (!_.includes(this.contents,item)) return dungeon.meta.event("item_not_in_inventory");
+
                 var instance = dungeon.items[item]();
-                if (!instance.use){
-                  dungeon.meta.event("cant_use_item");  
-                  return;
-                }
+                if (!instance.use){ return dungeon.meta.event("cant_use_item")};
 
                 instance.use(targets);
-                this.contents.splice(index,1);
-                
+                _.pull(this.contents,item);
             },
             equip:function(item,target){
 
