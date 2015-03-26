@@ -15,35 +15,29 @@ var dungeon = {
             contents:[],
             add:function(item){this.contents.push(item)},
             use:function(item,targets){
-
-                if (!_.includes(this.contents,item)) return dungeon.meta.event("item_not_in_inventory");
-
                 var instance = dungeon.items[item]();
+
+                if (!this.has(item)) return dungeon.meta.event("item_not_in_inventory");
                 if (!instance.use){ return dungeon.meta.event("cant_use_item")};
 
                 instance.use(targets);
-                _.pull(this.contents,item);
+                if (!item.unlimited) this.remove(item);
+               
             },
+            has:function(item){
+                return _.includes(this.contents,item);
+            },
+            remove:function(item){
+                _.pull(this.contents,item);
+            }
             equip:function(item,target){
-
-                var index = this.contents.indexOf(item);
-                var item = this.contents[index];
-                if (!item){
-                    dungeon.meta.event("item_not_in_inventory");
-                    return;
-                };
                 var instance = dungeon.items[item]();
+                if (!this.has(item)) return dungeon.meta.event("item_not_in_inventory");
+                if (!instance.equip) return dungeon.meta.event("cant_use_equip");
 
-                if (!instance.equip){
-                  dungeon.meta.event("cant_use_equip");  
-                  return;
-                }
-                var prev = target.equipment[instance.equip];
-                if (prev){
-                    this.contents.push(prev);
-                }
-
+                if (target.equipment[instance.equip]) this.contents.push(target.equipment[instance.equip]);
                 target.equipment[instance.equip] = item;
+                this.remove(item);
             }
         };
         return inventory;
@@ -66,31 +60,25 @@ var dungeon = {
     battle:function(actors){
     	return {
     		step:function(){
-    			actors.forEach(function(actor){
-					if (actor.dead) return;
-					actor.step();
-					if(actor.atb>=255 && actor.auto){
-						var move = dungeon.ais[actor.ai].bind(actor)(actors);
+                function actorMove(actor) {
+                    if (actor.dead) return;
+                    actor.step();
+                    if(actor.atb>=255 && actor.auto){
+                        var move = dungeon.ais[actor.ai].bind(actor)(actors);
 
-						if (move.targets.every(function(t){return t.dead})) {
-							return;
-						};
-
-						actor.action(move.action,move.targets)
-					}
-				})
+                        if (move.targets.some(function(t){return !t.dead})) {
+                            actor.action(move.action,move.targets)
+                        };
+                    }
+                }
+    			actors.forEach(actorMove});
     		},
     		getTargets:function(actor,action){
-                var targeting = dungeon.targetings[action];
-    			return actors.filter(targeting(actor));
+    			return actors.filter(dungeon.targetings[action](actor));
     		},
             action:function(entity,action,targets,all){
-                if (!targets){
-                    targets = this.getTargets(entity,action);
-                }
-                if (!all){
-                    targets=targets.slice(0,1);
-                }
+                if (!targets) targets = this.getTargets(entity,action);
+                if (!all)  targets=targets.slice(0,1);
                 entity.action(action,targets);
             }
     	}
