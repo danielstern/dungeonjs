@@ -105,64 +105,24 @@ var dungeon = {
         extensions:{},
         extend:function(name,extension){
             dungeon.characters.extensions[name] = extension;
-        },
-        actionListeners: [],
-        onaction: function(l) {this.actionListeners.push(l);},
+        },   
         proto: function() {
             var proto = {
-            status: {},
+            name: 'unknown',
             experience: 0,
             hp: 1,
             max_hp: 1,
-            name: 'unknown',
-            mp: 1,
             atb: 0,
-            dead: false,
             team: 0,
             attack: 1,
             defense: 1,
-            special: 1,
-            resist: 1,
-            evasion: 1,
-            accuracy: 1,
-            speed: 1,
-            luck: 1,
-            x:0,
-            y:0,
-            z:0,
-            density:1,
-            ai: 'none',
-            equipment:{},
-            damage2x: [],
-            damage50: [],
-            immune: [],
+            status: {},
+            properties: {},
+            immune:{},
             stepListeners: [],
-            damage0: [],
-            properties: [],
+            actionListeners: [],
             actions: ['defend'],
             action: function(name, targets) {
-                var action = dungeon.actions[name];
-                var entity = this;
-
-                for (var k in this.status) {
-                    if (this.status[k]) {
-                        var status = dungeon.statuses[k];
-                        if (status.replaceAction) action = dungeon.actions[status.replaceAction];
-                        if (status.beforeAction) status.beforeAction(this);
-                    }
-                }
-
-                for (var q in this.equipment) {
-                    if (this.equipment[q]) {
-                        var equipment = dungeon.items.instance(this.equipment[q]);
-                        if (_.includes(equipment.replaceActionOn,action)) action = dungeon.actions[equipment.replaceAction];
-                        if (equipment.beforeAction) equipment.beforeAction(this);
-                    }
-                }
-
-                targets.forEach(function(target){action.bind(entity)(target)});
-                this.atb = 0;
-
                 dungeon.characters.actionListeners.forEach(function(a) {a(this)}.bind(this));
                 dungeon.meta.event("action", {actor: this, name: name, targets: targets});
             },
@@ -174,12 +134,6 @@ var dungeon = {
                 this.hp += hp;
                 if (this.hp > this.max_hp) this.hp = this.max_hp;
                 dungeon.meta.event("recoverHP", {target: this,hp: hp});
-            },
-            fullHeal: function() {
-                this.hp = this.max_hp;
-                this.mp = this.max_mp;
-                this.dead = false;
-                for (s in this.status) {this.status[s] = false}
             },
             takeStatus: function(status) {
                 if (!_.includes(this.immune,status)) this.status[status] = true; 
@@ -194,34 +148,31 @@ var dungeon = {
                 }
 
                 this.stepListeners.forEach(function(a) {a(this)}.bind(this));
-                // dungeon.meta.event("step", {target: this});
             },
             onstep: function(l) {this.stepListeners.push(l);},
+            onaction: function(l) {this.actionListeners.push(l);},
             
         };
-        _.extend(proto,dungeon.characters.extensions);
-        return proto;
+            _.extend(proto,dungeon.characters.extensions);
+            return proto;
         }
     },
     character: function(name, schema) {
         this.characters[name] = function(overrides){return _.defaults({},schema,overrides);} 
         return this;
     },
-    ais:{},
-    ai: function(name, ai) {this.ais[name] = ai; return this; },
+    ais:{
+        add:function(name, ai) {this.ais[name] = ai; return this; }
+    },
+    elements:{
+        add:function(name,element){ dungeon.elements[name] = element;}
+    },
     calculate: {
-        physicalDamage: function(target, damage) {
-            if (target.defending) damage *= 0.7;
-            return damage - target.defense / 10;
-        },
-        specialDamage: function(target, damage) { return damage - target.resist / 8;},
-        level: function(entity) {return Math.ceil(1 * Math.sqrt(entity.experience / 250));},
-        hit: function(attacker, defender, accuracy) {return Math.random() > attacker.accuracy / defender.evasion / 2},
-        elemental: function(target, damage, element) {
-            if (_.includes(target.damage2x,element)) damage *= 2;
-            if (_.includes(target.damage50,element)) damage /= 2;
-            if (_.includes(target.damage0,element)) damage *= 0;
-            return damage;
+        damage_1: function(attack,defense) {return attack - defense/2},
+        level: function(experience,const) {return Math.ceil(1 * Math.sqrt(experience / const));},
+        hit: function(hit,evade,modifier) {return hit / evade * modifier},
+        elemental: function(element,resistance) {
+            return dungeon.elements[element][resistance];
         },
         atb: function(char) {
             var increase = char.speed;
@@ -252,7 +203,7 @@ var dungeon = {
 	*/
     entity: function(config) {
         var spawn = dungeon.characters.proto();
-        _.assign(spawn,config).fullHeal();
+        _.assign(spawn,config);
         return spawn;
     }
 };
