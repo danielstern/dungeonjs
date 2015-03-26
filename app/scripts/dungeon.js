@@ -3,7 +3,8 @@ var dungeon = {
     metaListeners: [],
     filters:{
     	notDead:function(){return function(d){return !d.dead}},
-    	differentTeam:function(team){return function(d){return d.team !== team}}
+        differentTeam:function(team){return function(d){return d.team !== team}},
+    	sameTeam:function(team){return function(d){return d.team === team}}
     },
     meta: {
         event: function(type, options) {
@@ -28,14 +29,13 @@ var dungeon = {
 					if (actor.dead) return;
 					actor.step();
 					if(actor.atb>=255 && actor.auto){
-						// var move = ai[actor.ai].bind(actor)(actors);
-						// if (move.target && move.target.dead) {
-						// 	return;
-						// };
+						var move = dungeon.ais[actor.ai].bind(actor)(actors);
 
-						// if (actors.filter(dungeon.filters.differentTeam(actor.team)).filter(dungeon.filters.notDead)[0]) {
-						// 	actor.action(move.action,move.target)
-						// };
+						if (move.targets.every(function(t){return t.dead})) {
+							return;
+						};
+
+						actor.action(move.action,move.targets)
 					}
 				})
     		},
@@ -43,11 +43,14 @@ var dungeon = {
                 var targeting = dungeon.targetings[action];
     			return actors.filter(targeting(actor));
     		},
-            action:function(entity,action,target){
-                if (!target){
-                    target = this.getTargets(entity,action);
+            action:function(entity,action,targets,all){
+                if (!targets){
+                    targets = this.getTargets(entity,action);
                 }
-                entity.action(action,target);
+                if (!all){
+                    targets=targets.slice(0,1);
+                }
+                entity.action(action,targets);
             }
     	}
     },

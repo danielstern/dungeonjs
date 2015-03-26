@@ -15,7 +15,7 @@ var chars = {
 		damage2x:['water'],
 		damage50:['fire'],
 		damage0:[],
-		actions: ['fire_attack_1','defend','ceilidh','poison_cloud_1'],
+		actions: ['fire_attack_1','defend','ceilidh','poison_cloud_1','Heal'],
 	}
 }
 
@@ -75,19 +75,17 @@ dungeon.action("fire_attack_1",function(target){
 	return dungeon.filters.differentTeam(actor.team)
 })
 
-.action("poison_cloud_1",function(targets){
-		var entity = this;
-		targets.forEach(function(target){
-			var hit = Math.random() < 0.3;
-			
-			if (hit) {
-				target.takeStatus('poison');
-			}
+.action("poison_cloud_1",function(target){
+	var entity = this;
+	var hit = Math.random() < 0.3;
+		
+	if (hit) {
+		target.takeStatus('poison');
+	}
 
-			dungeon.meta.event("Poison Cloud",{attacker:entity,target:target,hit:hit});
-		})		
+	dungeon.meta.event("Poison Cloud",{attacker:entity,target:target,hit:hit});
 
-	})
+})
 .targeting("poison_cloud_1",function(actor){
 	return dungeon.filters.differentTeam(actor.team)
 })
@@ -100,6 +98,10 @@ dungeon.action("fire_attack_1",function(target){
 
 		dungeon.meta.event("ceilidh",{attacker:this,target:target,hit:hit});
 	})
+.targeting("ceilidh",function(actor){
+	return dungeon.filters.differentTeam(actor.team)
+})
+
 .action("Heal",function(target){
 		var recovery = 40 + this.special * 3;
 		var undead = target.properties.undead;
@@ -109,8 +111,11 @@ dungeon.action("fire_attack_1",function(target){
 			target.recoverHP(recovery);
 		}
 
-		dungeon.meta.event("ceilidh",{attacker:this,target:target,hit:hit,undead:undead});
+		dungeon.meta.event("ceilidh",{attacker:this,target:target,undead:undead});
 	})
+.targeting("Heal",function(actor){
+	return dungeon.filters.sameTeam(actor.team);
+})
 .action("defend",function(){
 	this.defending = true;
 	var expiry = 200;
@@ -144,6 +149,10 @@ dungeon.action("fire_attack_1",function(target){
 
 	dungeon.meta.event("Berserk Attack",{attacker:this,target:target,hit:hit,damage:damage});
 })
+.targeting("berserk_attack",function(actor){
+	return dungeon.filters.differentTeam(actor.team)
+})
+
 .status( "poison", {
             beforeAction: function(stats) {
                 var damage = stats.max_hp * 0.05;
