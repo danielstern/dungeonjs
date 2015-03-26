@@ -108,51 +108,47 @@ var dungeon = {
         },   
         proto: function() {
             var proto = {
-            name: 'unknown',
-            experience: 0,
-            hp: 1,
-            max_hp: 1,
-            atb: 0,
-            team: 0,
-            attack: 1,
-            defense: 1,
-            status: {},
-            properties: {},
-            immune:{},
-            stepListeners: [],
-            actionListeners: [],
-            actions: ['defend'],
-            action: function(name, targets) {
-                dungeon.characters.actionListeners.forEach(function(a) {a(this)}.bind(this));
-                dungeon.meta.event("action", {actor: this, name: name, targets: targets});
-            },
-            takeDamage: function(damage) {
-                this.hp -= damage;
-                dungeon.meta.event("takeDamage",{target: this,damage: damage});
-            },
-            recoverHP: function(hp) {
-                this.hp += hp;
-                if (this.hp > this.max_hp) this.hp = this.max_hp;
-                dungeon.meta.event("recoverHP", {target: this,hp: hp});
-            },
-            takeStatus: function(status) {
-                if (!_.includes(this.immune,status)) this.status[status] = true; 
-                dungeon.meta.event("statusInflicted", {target: this,immune: _.includes(this.immune,status)});
-            },
-            step: function() {
-                if (this.atb < dungeon.MAX_ATB) this.atb += dungeon.calculate.atb(this);
+                name: 'unknown',
+                hp: 1,
+                max_hp: 1,
+                team: 0,
+                status: {},
+                properties: {},
+                immune:{},
+                stepListeners: [],
+                actionListeners: [],
+                actions: ['defend'],
+                action: function(name, targets) {
+                    dungeon.characters.actionListeners.forEach(function(a) {a(this)}.bind(this));
+                    dungeon.meta.event("action", {actor: this, name: name, targets: targets});
+                },
+                takeDamage: function(damage) {
+                    this.hp -= damage;
+                    dungeon.meta.event("takeDamage",{target: this,damage: damage});
+                },
+                recoverHP: function(hp) {
+                    this.hp += hp;
+                    if (this.hp > this.max_hp) this.hp = this.max_hp;
+                    dungeon.meta.event("recoverHP", {target: this,hp: hp});
+                },
+                takeStatus: function(status) {
+                    if (!_.includes(this.immune,status)) this.status[status] = true; 
+                    dungeon.meta.event("statusInflicted", {target: this,immune: _.includes(this.immune,status)});
+                },
+                step: function() {
+                    if (this.atb < dungeon.MAX_ATB) this.atb += dungeon.calculate.atb(this);
 
-                if (this.hp <= 0 && !this.dead) {
-                    this.dead = true;
-                    dungeon.meta.event("dead", {target: this});
-                }
+                    if (this.hp <= 0 && !this.dead) {
+                        this.dead = true;
+                        dungeon.meta.event("dead", {target: this});
+                    }
 
-                this.stepListeners.forEach(function(a) {a(this)}.bind(this));
-            },
-            onstep: function(l) {this.stepListeners.push(l);},
-            onaction: function(l) {this.actionListeners.push(l);},
-            
-        };
+                    this.stepListeners.forEach(function(a) {a(this)}.bind(this));
+                },
+                onstep: function(l) {this.stepListeners.push(l);},
+                onaction: function(l) {this.actionListeners.push(l);},
+                
+            };
             _.extend(proto,dungeon.characters.extensions);
             return proto;
         }
@@ -174,33 +170,19 @@ var dungeon = {
         elemental: function(element,resistance) {
             return dungeon.elements[element][resistance];
         },
-        atb: function(char) {
-            var increase = char.speed;
-            if (char.haste) increase *= 2;
-            if (char.slow) increase /= 2;
-            return increase;
-        },
-        extend:function(name,functor){
+        add:function(name,functor){
             dungeon.calculate[name] = functor;
         }
     },
-    actions: {},
-    /*
-		Add a new action that entities can do.
-	*/
-    action: function(name, action) {
-        this.actions[name] = action;
-        return this;
+    actions: {
+        add:function(name, action) { this.actions[name] = action; return this;  }
     },
-    statuses: {},
-    status: function(name, status) {
-        this.statuses[name] = status;
-        return this;
+    statuses: {
+        add:function(name, status) {
+            this.statuses[name] = status;
+            return this;
+        }
     },
-
-    /*
-		Creates a blueprint that returns new instances of a creature.
-	*/
     entity: function(config) {
         var spawn = dungeon.characters.proto();
         _.assign(spawn,config);
