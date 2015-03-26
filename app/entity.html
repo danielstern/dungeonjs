@@ -25,6 +25,6 @@
   	berserk
   </div>
 
-  <button ng-if='entity.atb > 250' ng-click=entity.action(action,getTargets(entity)[0]) ng-repeat='action in entity.actions'>
+  <button ng-if='entity.atb > 250' ng-click=battle.action(entity,action) ng-repeat='action in entity.actions'>
   	{{action}}
   </button>

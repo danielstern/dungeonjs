@@ -15,59 +15,23 @@ var chars = {
 		damage2x:['water'],
 		damage50:['fire'],
 		damage0:[],
-		actions: ['fire_attack_1','defend','ceilidh'],
-	},
-	'Ghoul':{
-		name:'Ghoul',
-		max_hp:90,
-		max_mp:12,
-		ap:0,
-		atb:0,
-		attack:2,
-		defense:1,
-		resist:2,
-		evasion:3,
-		speed:3,
-		properties:['magical','undead'],
-		ai:'01',
-		team:0,
-		damage2x:['light'],
-		damage50:[''],
-		damage0:['dark'],
-		immune:['petrify'],
-		actions: ['defend'],
+		actions: ['fire_attack_1','defend','ceilidh','poison_cloud_1'],
 	}
 }
 
-var ai = {
-	'00':function(field,turn){
-		var team = this.team;
-		if (Math.random() < 0.2) {
-			return {
-				action:'ceilidh',
-				target:field.filter(function(a){return a.team != team})[0]
-			};
-		}
+dungeon.ai('00',function(field,turn){
+	var team = this.team;
+	if (Math.random() < 0.2) {
 		return {
-			action:Math.random() > 0.5 ? 'fire_attack_1' : 'defend',
-			target:field.filter(function(a){return a.team != team})[0]
-		};
-	},
-	'01':function(field,turn){
-		// debugger;
-		var team = this.team;
-		if (Math.random() < 0.3) {
-			return {
-				action:'poison_cloud_1',
-				target:field.filter(dungeon.filters.differentTeam(team))
-			};
-		}
-		return {
-			action:Math.random() > 0.5 ? 'special_attack_1' : 'defend',
-			target:field.filter(dungeon.filters.differentTeam(team))[0]
+			action:'ceilidh',
+			targets:field.filter(function(a){return a.team != team})
 		};
 	}
-}
+	return {
+		action:Math.random() > 0.5 ? 'fire_attack_1' : 'defend',
+		targets:field.filter(function(a){return a.team != team})
+	};
+})
 
 dungeon.action("fire_attack_1",function(target){
 
@@ -90,6 +54,10 @@ dungeon.action("fire_attack_1",function(target){
 
 	dungeon.meta.event("Fire Attack",{attacker:this,target:target,element:element,hit:hit,damage:damage});
 })
+.targeting("fire_attack_1",function(actor){
+	return dungeon.filters.differentTeam(actor.team)
+})
+
 .action("special_attack_1",function(target){
 
 	var damage = this.special + 4,
@@ -103,6 +71,10 @@ dungeon.action("fire_attack_1",function(target){
 
 	dungeon.meta.event("Special Attack",{attacker:this,target:target,hit:hit,damage:damage});
 })
+.targeting("special_attack_1",function(actor){
+	return dungeon.filters.differentTeam(actor.team)
+})
+
 .action("poison_cloud_1",function(targets){
 		var entity = this;
 		targets.forEach(function(target){
@@ -116,14 +88,10 @@ dungeon.action("fire_attack_1",function(target){
 		})		
 
 	})
-.action("evil_laugh",function(target){
-		var hit = Math.random() < 0.3;
-		if (hit) {
-			target.takeStatus('fear');
-		}
+.targeting("poison_cloud_1",function(actor){
+	return dungeon.filters.differentTeam(actor.team)
+})
 
-		dungeon.meta.event("Evil Laugh",{attacker:this,target:target,hit:hit});
-	})
 .action("ceilidh",function(target){
 		var hit = Math.random() < 0.3;
 		if (hit) {
@@ -157,9 +125,10 @@ dungeon.action("fire_attack_1",function(target){
 
 	dungeon.meta.event("Defend",{attacker:this});
 })
-.action("petrified",function(){
-	console.log("Petrified:",this.name);
+.targeting("defend",function(actor){
+	return function(){};
 })
+
 .action("berserk_attack",function(target){
 	if (target instanceof Array) {
 		target = target[0];

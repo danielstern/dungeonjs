@@ -28,21 +28,38 @@ var dungeon = {
 					if (actor.dead) return;
 					actor.step();
 					if(actor.atb>=255 && actor.auto){
-						var move = ai[actor.ai].bind(actor)(actors);
-						if (move.target && move.target.dead) {
-							return;
-						};
+						// var move = ai[actor.ai].bind(actor)(actors);
+						// if (move.target && move.target.dead) {
+						// 	return;
+						// };
 
-						if (actors.filter(dungeon.filters.differentTeam(actor.team)).filter(dungeon.filters.notDead)[0]) {
-							actor.action(move.action,move.target)
-						};
+						// if (actors.filter(dungeon.filters.differentTeam(actor.team)).filter(dungeon.filters.notDead)[0]) {
+						// 	actor.action(move.action,move.target)
+						// };
 					}
 				})
     		},
     		getTargets:function(actor,action){
-    			return actors.filter(differentTeam(actor.team))
-    		}
+                var targeting = dungeon.targetings[action];
+    			return actors.filter(targeting(actor));
+    		},
+            action:function(entity,action,target){
+                if (!target){
+                    target = this.getTargets(entity,action);
+                }
+                entity.action(action,target);
+            }
     	}
+    },
+    targetings:{},
+    targeting: function(name, targeting) {
+        this.targetings[name] = targeting;
+        return this;
+    },
+    ais:{},
+    ai: function(name, ai) {
+        this.ais[name] = ai;
+        return this;
     },
     calculate: {
         physicalDamage: function(target, damage) {
@@ -124,9 +141,9 @@ var dungeon = {
             damage0: [],
             properties: [],
             actions: ['defend'],
-            action: function(name, target) {
+            action: function(name, targets) {
                 var action = dungeon.actions[name];
-                var stats = this;
+                var entity = this;
 
                 for (var k in this.status) {
                     if (this.status[k]) {
@@ -139,9 +156,12 @@ var dungeon = {
                 dungeon.meta.event("action", {
                     actor: this,
                     name: name,
-                    target: target
+                    targets: targets
                 });
-                action.bind(this)(target);
+
+                targets.forEach(function(target){
+                    action.bind(entity)(target);    
+                })
                 this.atb = 0;
 
             },

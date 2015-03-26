@@ -2,25 +2,17 @@ angular.module('demo',[])
 .run(function($rootScope,$interval){
 	$rootScope.spawn = function(){
 		var dude1 = dungeon.entity(chars.Fireling),
-			dude2 = dungeon.entity(chars.Ghoul),
-			dude3 = dungeon.entity(chars.Ghoul);
+			dude2 = dungeon.entity(chars.Fireling);
 
 			dude2.team = 1;
-			dude3.team = 1;
-
 			dude2.auto = true;
-			dude3.auto = true;
 
-			$rootScope.dudes = [dude1,dude2,dude3]
+			$rootScope.dudes = [dude1,dude2]
 			$rootScope.battle = dungeon.battle($rootScope.dudes)
 
 	}
 
 	$rootScope.spawn();
-
-	$rootScope.getTargets = function(actor,action){
-		return $rootScope.battle.getTargets(actor,action);
-	}
 
 	$interval(function(){
 		$rootScope. battle.step()
