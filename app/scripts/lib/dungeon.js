@@ -2,13 +2,13 @@ var dungeon = {
     MAX_ATB: 255,
     metaListeners: [],
     filters:{
-    	notDead:function(){return function(d){return !d.dead}},
-        differentTeam:function(team){return function(d){return d.team !== team}},
-    	sameTeam:function(team){return function(d){return d.team === team}}
+        add:function(name,filter){
+            dungeon.filters[name] = filter;
+        }
     },
     meta: {
         event: function(type, options) {console.log(type);_.where(dungeon.metaListeners,{type:type}).forEach(function(a){a(options);})},
-        listen: function(type, callback) {dungeon.metaListeners.push({type: type,callback: callback})}
+        listen: function(type, callback) {dungeon.metaListenes.push({type: type,callback: callback})}
     },
     inventory:function(){
         var inventory = {
@@ -64,6 +64,12 @@ var dungeon = {
         }
         return this;
     },
+    random:{
+        d20:function(){return Math.ceil(Math.random()*20)},
+        d10:function(){return Math.ceil(Math.random()*20)},
+        d6:function(){return Math.ceil(Math.random()*20)},
+        coin:function(){return Math.random() > 0.5},
+    },
     battle:function(actors){
     	return {
     		step:function(){
@@ -96,9 +102,14 @@ var dungeon = {
         return this;
     },
     characters:{
+        extensions:{},
+        extend:function(name,extension){
+            dungeon.characters.extensions[name] = extension;
+        },
+        actionListeners: [],
+        onaction: function(l) {this.actionListeners.push(l);},
         proto: function() {
-
-        return {
+            var proto = {
             status: {},
             experience: 0,
             hp: 1,
@@ -116,6 +127,10 @@ var dungeon = {
             accuracy: 1,
             speed: 1,
             luck: 1,
+            x:0,
+            y:0,
+            z:0,
+            density:1,
             ai: 'none',
             equipment:{},
             damage2x: [],
@@ -148,6 +163,7 @@ var dungeon = {
                 targets.forEach(function(target){action.bind(entity)(target)});
                 this.atb = 0;
 
+                dungeon.characters.actionListeners.forEach(function(a) {a(this)}.bind(this));
                 dungeon.meta.event("action", {actor: this, name: name, targets: targets});
             },
             takeDamage: function(damage) {
@@ -178,12 +194,14 @@ var dungeon = {
                 }
 
                 this.stepListeners.forEach(function(a) {a(this)}.bind(this));
-                dungeon.meta.event("step", {target: this});
+                // dungeon.meta.event("step", {target: this});
             },
-            onstep: function(l) {this.stepListeners.push(l);}
+            onstep: function(l) {this.stepListeners.push(l);},
+            
+        };
+        _.extend(proto,dungeon.characters.extensions);
+        return proto;
         }
-
-    }
     },
     character: function(name, schema) {
         this.characters[name] = function(overrides){return _.defaults({},schema,overrides);} 
@@ -210,6 +228,9 @@ var dungeon = {
             if (char.haste) increase *= 2;
             if (char.slow) increase /= 2;
             return increase;
+        },
+        extend:function(name,functor){
+            dungeon.calculate[name] = functor;
         }
     },
     actions: {},

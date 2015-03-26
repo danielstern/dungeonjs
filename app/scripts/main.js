@@ -38,4 +38,3 @@ angular.module('demo',[])
 		return d.filter(function(e){return e.team===a})
 	}
 })
-
