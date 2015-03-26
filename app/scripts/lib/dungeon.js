@@ -30,13 +30,24 @@ var dungeon = {
             remove:function(item){
                 _.pull(this.contents,item);
             },
+            unequip:function(target,position){
+                var item = target.equipment[position];
+                if (item) {
+                    var instance = dungeon.items.instance(item);
+                    if (instance.onUnequip) instance.onUnequip(target);
+                    this.contents.push(position);
+                }
+            },
             equip:function(item,target){
                 var instance = dungeon.items.instance(item);
                 if (!this.has(item)) return dungeon.meta.event("item_not_in_inventory");
                 if (!instance.equip) return dungeon.meta.event("cant_use_equip");
 
-                if (target.equipment[instance.equip]) this.contents.push(target.equipment[instance.equip]);
+                this.unequip(target,instance.equip)
+                
                 target.equipment[instance.equip] = item;
+                if (instance.onEquip) instance.onEquip(target);
+                
                 this.remove(item);
             }
         };
