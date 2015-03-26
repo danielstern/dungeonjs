@@ -15,7 +15,7 @@ var dungeon = {
             contents:[],
             add:function(item){this.contents.push(item)},
             use:function(item,targets){
-                var instance = dungeon.items[item]();
+                var instance = dungeon.items.instance(item);
 
                 if (!this.has(item)) return dungeon.meta.event("item_not_in_inventory");
                 if (!instance.use){ return dungeon.meta.event("cant_use_item")};
@@ -29,9 +29,9 @@ var dungeon = {
             },
             remove:function(item){
                 _.pull(this.contents,item);
-            }
+            },
             equip:function(item,target){
-                var instance = dungeon.items[item]();
+                var instance = dungeon.items.instance(item);
                 if (!this.has(item)) return dungeon.meta.event("item_not_in_inventory");
                 if (!instance.equip) return dungeon.meta.event("cant_use_equip");
 
@@ -42,15 +42,11 @@ var dungeon = {
         };
         return inventory;
     },
-    items:{
-        proto:{
-            canEquip:false,
-            canUse:false,
-            onUse:function(targets){
-
-            },
+   items:{
+        instance:function(item){
+            return dungeon.items[item]();
         }
-    },
+   },
    item: function(name, item) {
         this.items[name] = function(){
             return item;   
@@ -64,15 +60,15 @@ var dungeon = {
                     if (actor.dead) return;
                     actor.step();
                     if(actor.atb>=255 && actor.auto){
-                        var move = dungeon.ais[actor.ai].bind(actor)(actors);
-
-                        if (move.targets.some(function(t){return !t.dead})) {
-                            actor.action(move.action,move.targets)
-                        };
+                        var move = this.getMove(actor);
+                        actor.action(move.action,move.targets);
                     }
-                }
-    			actors.forEach(actorMove});
+                };
+    			actors.forEach(actorMove);
     		},
+            getMove:function(actor){
+                return dungeon.ais[actor.ai].bind(actor)(actors);
+            },
     		getTargets:function(actor,action){
     			return actors.filter(dungeon.targetings[action](actor));
     		},
@@ -109,11 +105,7 @@ var dungeon = {
             accuracy: 1,
             speed: 1,
             luck: 1,
-            ai: function() {
-                return {
-                    action: 'defend'
-                }
-            },
+            ai: 'none',
             equipment:{},
             damage2x: [],
             damage50: [],
@@ -136,140 +128,70 @@ var dungeon = {
 
                 for (var q in this.equipment) {
                     if (this.equipment[q]) {
-                        var equipment = dungeon.items[this.equipment[q]]();
-                        if (equipment.replaceActionOn && equipment.replaceActionOn.indexOf(name)>-1) action = dungeon.actions[equipment.replaceAction];
+                        var equipment = dungeon.items.instance(this.equipment[q]);
+                        if (_.includes(equipment.replaceActionOn,action)) action = dungeon.actions[equipment.replaceAction];
                         if (equipment.beforeAction) equipment.beforeAction(this);
                     }
                 }
 
-                dungeon.meta.event("action", {
-                    actor: this,
-                    name: name,
-                    targets: targets
-                });
-
-                targets.forEach(function(target){
-                    action.bind(entity)(target);    
-                })
+                targets.forEach(function(target){action.bind(entity)(target)});
                 this.atb = 0;
 
+                dungeon.meta.event("action", {actor: this, name: name, targets: targets});
             },
             takeDamage: function(damage) {
                 this.hp -= damage;
-                dungeon.meta.event("takeDamage", {
-                    target: this,
-                    damage: damage
-                });
-            },
-            getCalculatedStats: function() {
-                return dungeon.calculate.stats(this);
+                dungeon.meta.event("takeDamage",{target: this,damage: damage});
             },
             recoverHP: function(hp) {
                 this.hp += hp;
                 if (this.hp > this.max_hp) this.hp = this.max_hp;
-                dungeon.meta.event("recoverHP", {
-                    target: this,
-                    hp: hp
-                });
-
+                dungeon.meta.event("recoverHP", {target: this,hp: hp});
             },
             fullHeal: function() {
                 this.hp = this.max_hp;
                 this.mp = this.max_mp;
                 this.dead = false;
-                for (s in this.status) {
-                    this.status[s] = false;
-                }
+                for (s in this.status) {this.status[s] = false}
             },
-
             takeStatus: function(status) {
-                var immune = this.immune.indexOf(status) > -1;
-                if (!immune) {
-                    this.status[status] = true;
-                }
-
-                dungeon.meta.event("statusInflicted", {
-                    target: this,
-                    immune: immune
-                });
+                if (!_.includes(this.immune,status)) this.status[status] = true; 
+                dungeon.meta.event("statusInflicted", {target: this,immune: _.includes(this.immune,status)});
             },
             step: function() {
-
-                var entity = this;
-
-                if (this.atb < dungeon.MAX_ATB) {
-                    this.atb += dungeon.calculate.atb(this);
-                }
+                if (this.atb < dungeon.MAX_ATB) this.atb += dungeon.calculate.atb(this);
 
                 if (this.hp <= 0 && !this.dead) {
                     this.dead = true;
-                    dungeon.meta.event("dead", {
-                        target: this
-                    });
+                    dungeon.meta.event("dead", {target: this});
                 }
 
-           
-
-                this.stepListeners.forEach(function(a) {
-                    a(entity)
-                })
+                this.stepListeners.forEach(function(a) {a(this)}.bind(this));
+                dungeon.meta.event("step", {target: this});
             },
-            onstep: function(l) {
-                this.stepListeners.push(l);
-                dungeon.meta.event("step", {
-                    target: this
-                });
-            }
+            onstep: function(l) {this.stepListeners.push(l);}
         }
 
     }
     },
     character: function(name, schema) {
-        this.characters[name] = function(overrides){
-           var model = {};
-           for(g in schema) {
-                if (!model[g]) model[g] = schema[g];
-           }
-           return model; 
-        } 
+        this.characters[name] = function(overrides){return _.defaults({},schema,overrides);} 
         return this;
     },
     ais:{},
-    ai: function(name, ai) {
-        this.ais[name] = ai;
-        return this;
-    },
+    ai: function(name, ai) {this.ais[name] = ai; return this; },
     calculate: {
         physicalDamage: function(target, damage) {
             if (target.defending) damage *= 0.7;
             return damage - target.defense / 10;
         },
-        specialDamage: function(target, damage) {
-            return damage - target.resist / 8;
-        },
-        level: function(entity) {
-            return Math.ceil(1 * Math.sqrt(entity.experience / 250));
-        },
-        hit: function(attacker, defender, accuracy) {
-            var ratio = attacker.accuracy / defender.evasion;
-            if (ratio > 1) {
-                return true;
-            }
-            return Math.random() > ratio / 2;
-        },
+        specialDamage: function(target, damage) { return damage - target.resist / 8;},
+        level: function(entity) {return Math.ceil(1 * Math.sqrt(entity.experience / 250));},
+        hit: function(attacker, defender, accuracy) {return Math.random() > attacker.accuracy / defender.evasion / 2},
         elemental: function(target, damage, element) {
-            if (target.damage2x.indexOf(element) > -1) {
-                damage *= 2;
-            }
-
-            if (target.damage50.indexOf(element) > -1) {
-                damage /= 2;
-            }
-
-            if (target.damage0.indexOf(element) > -1) {
-                damage *= 0;
-            }
-
+            if (_.includes(target.damage2x,element)) damage *= 2;
+            if (_.includes(target.damage50,element)) damage /= 2;
+            if (_.includes(target.damage0,element)) damage *= 0;
             return damage;
         },
         atb: function(char) {
@@ -298,13 +220,7 @@ var dungeon = {
 	*/
     entity: function(config) {
         var spawn = dungeon.characters.proto();
-
-        for (stat in config) {
-            spawn[stat] = config[stat];
-        }
-
-        spawn.fullHeal();
+        _.assign(spawn,config).fullHeal();
         return spawn;
-
     }
 };
