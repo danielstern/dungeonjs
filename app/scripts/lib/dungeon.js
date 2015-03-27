@@ -29,26 +29,7 @@ var dungeon = {
             },
             remove:function(item){
                 _.pull(this.contents,item);
-            },
-            unequip:function(target,position){
-                var item = target.equipment[position];
-                if (item) {
-                    var instance = dungeon.items.instance(item);
-                    if (instance.onUnequip) instance.onUnequip(target);
-                    this.contents.push(position);
-                }
-            },
-            equip:function(item,target){
-                var instance = dungeon.items.instance(item);
-                if (!this.has(item)) return dungeon.meta.event("item_not_in_inventory");
-                if (!instance.equip) return dungeon.meta.event("cant_use_equip");
 
-                this.unequip(target,instance.equip)
-                
-                target.equipment[instance.equip] = item;
-                if (instance.onEquip) instance.onEquip(target);
-                
-                this.remove(item);
             }
         };
         return inventory;
@@ -115,16 +96,37 @@ var dungeon = {
                 status: {},
                 properties: {},
                 immune:{},
+                dead:false,
                 stepListeners: [],
+                equipment: [],
                 actionListeners: [],
                 actions: ['defend'],
                 action: function(name, targets) {
                     dungeon.characters.actionListeners.forEach(function(a) {a(this)}.bind(this));
                     dungeon.meta.event("action", {actor: this, name: name, targets: targets});
+                    _.each(this.status,function(a){if(a&&a.onAction){a.onAction(this)}}.bind(this))
+                    _.each(this.equipment,function(a){if(a&&a.onAction){a.onAction(this)}}.bind(this))
+                },
+                equip:function(item){
+                    this.equipment.push(item);
+                    return this;
+                },
+                unequip:function(item){
+                    this.equipment.splice(this.equipment.indexOf(item),1);
+                    return this;
                 },
                 takeDamage: function(damage) {
                     this.hp -= damage;
                     dungeon.meta.event("takeDamage",{target: this,damage: damage});
+                    if (this.hp<=0){
+                        this.kill();
+                    }
+                    return this;
+                },
+                kill: function(){
+                    this.dead = true;
+                    this.hp = 0;
+                    dungeon.meta.event("dead",{target: this});
                 },
                 recoverHP: function(hp) {
                     this.hp += hp;
@@ -147,7 +149,6 @@ var dungeon = {
                 },
                 onstep: function(l) {this.stepListeners.push(l);},
                 onaction: function(l) {this.actionListeners.push(l);},
-                
             };
             _.extend(proto,dungeon.characters.extensions);
             return proto;
@@ -165,7 +166,7 @@ var dungeon = {
     },
     calculate: {
         damage_1: function(attack,defense) {return attack - defense/2},
-        level: function(experience,const) {return Math.ceil(1 * Math.sqrt(experience / const));},
+        level: function(experience,mod) {return Math.ceil(1 * Math.sqrt(experience / mod));},
         hit: function(hit,evade,modifier) {return hit / evade * modifier},
         elemental: function(element,resistance) {
             return dungeon.elements[element][resistance];
