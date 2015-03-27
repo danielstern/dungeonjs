@@ -1,11 +1,5 @@
 var dungeon = {
-    MAX_ATB: 255,
     metaListeners: [],
-    filters:{
-        add:function(name,filter){
-            dungeon.filters[name] = filter;
-        }
-    },
     meta: {
         event: function(type, options) {console.log(type);_.where(dungeon.metaListeners,{type:type}).forEach(function(a){a(options);})},
         listen: function(type, callback) {dungeon.metaListenes.push({type: type,callback: callback})}
@@ -35,17 +29,21 @@ var dungeon = {
         return inventory;
     },
    items:{
-        instance:function(item){
-            return dungeon.items[item]();
+        proto:{
+            onAction:function(){},
+            use:function(){}
+        },
+        create:function(item){
+            return _.defaults(dungeon.items[item](),this.proto);
+        },
+        add:function(name, item) {
+            this[name] = function(){
+                return item;   
+            }
+            return this;
         }
    },
-   item: function(name, item) {
-        this.items[name] = function(){
-            return item;   
-        }
-        return this;
-    },
-    random:{
+   random:{
         d20:function(){return Math.ceil(Math.random()*20)},
         d10:function(){return Math.ceil(Math.random()*10)},
         d6:function(){return Math.ceil(Math.random()*6)},
@@ -106,7 +104,8 @@ var dungeon = {
                     this.actionListeners.forEach(function(a) {a(this)}.bind(this));
                     _.each(this.status,function(a){if(a&&a.onAction){a.onAction(this)}}.bind(this));
                     _.each(this.equipment,function(a){if(a&&a.onAction){a.onAction(this)}}.bind(this));
-                    if (dungeon.actions[name]) dungeon.actions[name].bind(this)(targets);
+                    var action = dungeon.actions[name];
+                    if (action.onAction) action.onAction.bind(this)(targets);
                     dungeon.meta.event("action", {actor: this, name: name, targets: targets});
                     return this;
                 },
@@ -168,9 +167,11 @@ var dungeon = {
         }
     },
     ais:{
-        add:function(name, ai) {this.ais[name] = ai; return this; }
+        proto:function(field){},
+        add:function(name, ai) {this.ais[name] = ai; return this;}
     },
     elements:{
+        proto:{proto:1},
         add:function(name,element){ dungeon.elements[name] = element;}
     },
     calculate: {
@@ -185,13 +186,13 @@ var dungeon = {
         }
     },
     actions: {
+        proto:{
+            onAction:function(){}
+        },
         add:function(name, action) { this.actions[name] = action; return this;  }
     },
     statuses: {
-        add:function(name, status) {
-            this.statuses[name] = status;
-            return this;
-        }
+        add:function(name, status) { this.statuses[name] = status; return this;  }
     },
 
 };
