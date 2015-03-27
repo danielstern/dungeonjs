@@ -29,6 +29,14 @@ var dungeon = {
         };
         return inventory;
     },
+    wallet:function(){
+        return {
+            gold:0,
+            add:function(n){this.gold+=n},
+            remove:function(n){this.gold-=n},
+            has:function(n){this.gold>=n}
+        }
+    },
     group:{
         proto:[{group:'proto',p:3},{name:'ε',p:5}],
         add:function(name,group){dungeon.groups[name]=group},
