@@ -1,8 +1,9 @@
 var dungeon = {
     metaListeners: [],
     meta: {
-        event: function(type, options) {console.log(type);_.where(dungeon.metaListeners,{type:type}).forEach(function(a){a(options);})},
-        listen: function(type, callback) {dungeon.metaListenes.push({type: type,callback: callback})}
+        event: function(type, options) {if(this.debug){console.log(type)};_.where(dungeon.metaListeners,{type:type}).forEach(function(a){a(options);})},
+        listen: function(type, callback) {dungeon.metaListenes.push({type: type,callback: callback})},
+        debug:false,
     },
     inventory:function(){
         var inventory = {
@@ -27,6 +28,31 @@ var dungeon = {
             }
         };
         return inventory;
+    },
+    group:{
+        proto:[{group:'proto',probability:3},{name:'ε',probability:5}],
+        add:function(name,group){dungeon.groups[name]=group},
+        roll:function(group){
+            function select(array){
+                var total = 0;
+                var ranges = array.map(function(a,index){
+                    var range = {
+                        start:total,
+                        end:a.probability+total,
+                        item:a
+                    }
+                    total+=a.probability;
+                    return range;
+                });
+                // debugger;
+                var roll = Math.floor(Math.random()*total);
+                var winner = _.find(ranges,function(a){return a.start<=roll&&a.end>=roll});
+                if (!winner) debugger;
+                var item = winner.item;
+                return item;
+            }
+            return select(group);
+        }
     },
    items:{
         proto:{
