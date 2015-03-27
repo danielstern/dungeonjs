@@ -30,28 +30,33 @@ var dungeon = {
         return inventory;
     },
     group:{
-        proto:[{group:'proto',probability:3},{name:'ε',probability:5}],
+        proto:[{group:'proto',p:3},{name:'ε',p:5}],
         add:function(name,group){dungeon.groups[name]=group},
-        roll:function(group){
-            function select(array){
-                var total = 0;
-                var ranges = array.map(function(a,index){
-                    var range = {
-                        start:total,
-                        end:a.probability+total,
-                        item:a
-                    }
-                    total+=a.probability;
-                    return range;
-                });
-                // debugger;
-                var roll = Math.floor(Math.random()*total);
-                var winner = _.find(ranges,function(a){return a.start<=roll&&a.end>=roll});
-                if (!winner) debugger;
-                var item = winner.item;
-                return item;
+        roll:function(group){    
+            var attempts = 1000;
+            var result = this.select(group);
+            while(result.group&&attempts){
+                attempts--;
+                var group = dungeon.group[result.group];
+                result = this.select(group);
             }
-            return select(group);
+            return result.name;
+        },
+        select:function(array){
+            var total = 0;
+            var ranges = array.map(function(a,index){
+                var range = {
+                    start:total,
+                    end:a.p+total,
+                    item:a
+                }
+                total+=a.p;
+                return range;
+            });
+            var roll = Math.floor(Math.random()*total);
+            var winner = _.find(ranges,function(a){return a.start<=roll&&a.end>=roll});
+            var item = winner.item;
+            return item;
         }
     },
    items:{
