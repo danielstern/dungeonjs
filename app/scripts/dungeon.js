@@ -74,7 +74,10 @@ var dungeon = {
    },
    random:{
         d20:function(){return Math.ceil(Math.random()*20)},
+        d12:function(){return Math.ceil(Math.random()*12)},
         d10:function(){return Math.ceil(Math.random()*10)},
+        d8:function(){return Math.ceil(Math.random()*8)},
+        d5:function(){return Math.ceil(Math.random()*5)},
         d6:function(){return Math.ceil(Math.random()*6)},
         coin:function(){return Math.random() > 0.5},
     },
