@@ -47,22 +47,19 @@ var dungeon = {
     },
     random:{
         d20:function(){return Math.ceil(Math.random()*20)},
-        d10:function(){return Math.ceil(Math.random()*20)},
-        d6:function(){return Math.ceil(Math.random()*20)},
+        d10:function(){return Math.ceil(Math.random()*10)},
+        d6:function(){return Math.ceil(Math.random()*6)},
         coin:function(){return Math.random() > 0.5},
     },
-    battle:function(actors){
+    battle:function(characters){
     	return {
+            characters:characters,
+            add:function(char){charactars.push(char)},
     		step:function(){
-                function actorMove(actor) {
-                    if (actor.dead) return;
-                    actor.step();
-                    if(actor.atb>=255 && actor.auto){
-                        var move = this.getMove(actor);
-                        actor.action(move.action,move.targets);
-                    }
-                };
-    			actors.forEach(actorMove);
+    			actors.forEach(function actorMove(actor) {
+                    var move = this.getMove(actor);
+                    actor.action(move.action,move.targets);
+                });
     		},
             getMove:function(actor){
                 return dungeon.ais[actor.ai].bind(actor)(actors);
@@ -77,16 +74,20 @@ var dungeon = {
             }
     	}
     },
-    targetings:{},
-    targeting: function(name, targeting) {
-        this.targetings[name] = targeting;
-        return this;
-    },
     characters:{
         extensions:{},
         extend:function(name,extension){
             dungeon.characters.extensions[name] = extension;
-        },   
+        }, 
+        add: function(name, schema) {
+            this[name] = function(overrides){return _.defaults({},schema,overrides);} 
+            return this;
+        },
+        create:   function(config) {
+            var spawn = dungeon.characters.proto();
+            _.assign(spawn,config);
+            return spawn;
+        },
         proto: function() {
             var proto = {
                 name: 'unknown',
@@ -102,36 +103,48 @@ var dungeon = {
                 actionListeners: [],
                 actions: ['defend'],
                 action: function(name, targets) {
-                    dungeon.characters.actionListeners.forEach(function(a) {a(this)}.bind(this));
+                    this.actionListeners.forEach(function(a) {a(this)}.bind(this));
+                    _.each(this.status,function(a){if(a&&a.onAction){a.onAction(this)}}.bind(this));
+                    _.each(this.equipment,function(a){if(a&&a.onAction){a.onAction(this)}}.bind(this));
+                    if (dungeon.actions[name]) dungeon.actions[name].bind(this)(targets);
                     dungeon.meta.event("action", {actor: this, name: name, targets: targets});
-                    _.each(this.status,function(a){if(a&&a.onAction){a.onAction(this)}}.bind(this))
-                    _.each(this.equipment,function(a){if(a&&a.onAction){a.onAction(this)}}.bind(this))
+                    return this;
                 },
                 equip:function(item){
                     this.equipment.push(item);
+                    dungeon.meta.event("equip",{target: this,item: item});
                     return this;
                 },
                 unequip:function(item){
                     this.equipment.splice(this.equipment.indexOf(item),1);
+                    dungeon.meta.event("unequip",{target: this,item: item});
                     return this;
                 },
                 takeDamage: function(damage) {
                     this.hp -= damage;
                     dungeon.meta.event("takeDamage",{target: this,damage: damage});
                     if (this.hp<=0){
-                        this.kill();
+                        this.die();
                     }
                     return this;
                 },
-                kill: function(){
+                die: function(){
                     this.dead = true;
                     this.hp = 0;
                     dungeon.meta.event("dead",{target: this});
+                    return this;
                 },
                 recoverHP: function(hp) {
                     this.hp += hp;
                     if (this.hp > this.max_hp) this.hp = this.max_hp;
                     dungeon.meta.event("recoverHP", {target: this,hp: hp});
+                    return this;
+                },
+                restore:function(){
+                    this.hp=this.max_hp;
+                    this.dead = false;
+                    dungeon.meta.event("restored",{target: this});
+                    return this;
                 },
                 takeStatus: function(status) {
                     if (!_.includes(this.immune,status)) this.status[status] = true; 
@@ -153,10 +166,6 @@ var dungeon = {
             _.extend(proto,dungeon.characters.extensions);
             return proto;
         }
-    },
-    character: function(name, schema) {
-        this.characters[name] = function(overrides){return _.defaults({},schema,overrides);} 
-        return this;
     },
     ais:{
         add:function(name, ai) {this.ais[name] = ai; return this; }
@@ -184,9 +193,5 @@ var dungeon = {
             return this;
         }
     },
-    entity: function(config) {
-        var spawn = dungeon.characters.proto();
-        _.assign(spawn,config);
-        return spawn;
-    }
+
 };
