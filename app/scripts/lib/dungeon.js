@@ -9,22 +9,12 @@ var dungeon = {
         var inventory = {
             contents:[],
             add:function(item){this.contents.push(item)},
-            use:function(item,targets){
-                var instance = dungeon.items.instance(item);
-
-                if (!this.has(item)) return dungeon.meta.event("item_not_in_inventory");
-                if (!instance.use){ return dungeon.meta.event("cant_use_item")};
-
-                instance.use(targets);
-                if (!item.unlimited) this.remove(item);
-               
-            },
             has:function(item){
                 return _.includes(this.contents,item);
             },
-            remove:function(item){
-                _.pull(this.contents,item);
-
+            remove:function(item,count){
+                _.pullAt(this.contents.indexOf(item));
+                return item;
             }
         };
         return inventory;
