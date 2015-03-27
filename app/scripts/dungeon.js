@@ -208,8 +208,8 @@ var dungeon = {
     },
     calculate: {
         damage_1: function(attack,defense) {return attack - defense/2},
+        hit_1: function(hit,evade,modifier) {return hit / evade * modifier},
         level: function(experience,mod) {return Math.ceil(1 * Math.sqrt(experience / mod));},
-        hit: function(hit,evade,modifier) {return hit / evade * modifier},
         elemental: function(element,resistance) {
             return dungeon.elements[element][resistance];
         },
@@ -218,12 +218,11 @@ var dungeon = {
         }
     },
     actions: {
-        proto:{
-            onAction:function(){}
-        },
+        proto:{onAction:function(){}},
         add:function(name, action) { this.actions[name] = action; return this;  }
     },
     statuses: {
+        proto:{onAction:function(){}},
         add:function(name, status) { this.statuses[name] = status; return this;  }
     },
 
